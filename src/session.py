@@ -197,7 +197,7 @@ class SessionImpl_1_7_2(object):
         url_parts = urlparse.urlparse(response.geturl())
         #print(url_parts)
         self.base_url = '{0}://{1}'.format(url_parts[0], url_parts[1])
-        print(self.base_url)
+        #print(self.base_url)
         
         self.__is_logged_in = self.__read_login_data(response)
         return self.is_logged_in

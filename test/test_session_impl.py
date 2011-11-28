@@ -40,11 +40,13 @@ class TestSessionImpl_1_7_2(mox.MoxTestBase):
         urllib2.install_opener('some opener')
         
         self.mox.StubOutWithMock(urllib2, 'urlopen')
-        urllib2.urlopen(request).AndReturn('some response')
+        some_response = self.mox.CreateMockAnything()
+        urllib2.urlopen(request).AndReturn(some_response)
+        some_response.geturl().AndReturn('some url')
         
         sut = SessionImpl_1_7_2()
         self.mox.StubOutWithMock(sut, '_SessionImpl_1_7_2__read_login_data')
-        sut._SessionImpl_1_7_2__read_login_data('some response').AndReturn(True)
+        sut._SessionImpl_1_7_2__read_login_data(some_response).AndReturn(True)
         
         self.mox.ReplayAll()
         self.assertTrue(sut.login('some login uri', 'some username', 'some password'))

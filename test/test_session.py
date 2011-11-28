@@ -25,3 +25,18 @@ class TestSession(mox.MoxTestBase):
         result = sut.login('some login uri', 'some username', 'some password')
         self.assertEqual(result, 'some result')
         
+    def test_exit_logged_in(self):
+        impl = self.mox.CreateMock(SessionImpl_1_7_2)
+        sut = Session(impl)
+        impl.is_logged_in = True
+        impl.logout()
+        self.mox.ReplayAll()
+        sut.__exit__(None, None, None)
+        
+    def test_exit_logged_in(self):
+        impl = self.mox.CreateMock(SessionImpl_1_7_2)
+        sut = Session(impl)
+        impl.is_logged_in = False
+        self.mox.ReplayAll()
+        sut.__exit__(None, None, None)
+        

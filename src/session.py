@@ -6,6 +6,7 @@ import re
 import hashlib
 import time
 import cookielib
+import urlparse
 from lxml import etree
 
 from exceptions import RETSQueryException
@@ -36,9 +37,13 @@ version number.\nValid versions: {1}""".format(version, ','.join(map.iterkeys())
 
     def login(self, uri, username, password):
         return self.__impl.login(uri, username, password)
+        
+    def logout(self):
+        if self.__impl.is_logged_in:
+            self.__impl.logout()
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+        self.logout()
     
     def __enter__(self):
         return self
@@ -47,7 +52,9 @@ class SessionImpl_1_7_2(object):
         
     def __init__(self):
         
+        self.__is_logged_in = False
         self.__cookie_jar = cookielib.CookieJar()
+        self.__base_url = None
         
         self.__broker_code = None
         self.__broker_branch = None
@@ -72,6 +79,18 @@ class SessionImpl_1_7_2(object):
         self.__get_metadata = None
         self.__server_information = None
         self.__update = None
+    
+    @property
+    def is_logged_in(self):
+        return self.__is_logged_in
+    
+    @property
+    def base_url(self):
+        return self.__base_url
+    
+    @base_url.setter
+    def base_url(self, value):
+        self.__base_url = value
     
     @property
     def action_url(self):
@@ -157,14 +176,15 @@ class SessionImpl_1_7_2(object):
     def broker_branch(self):
         return self.__broker_branch
     
-    def login(self, uri, username, password):
-        request = urllib2.Request(
+    def make_request(self, uri):
+        return urllib2.Request(
             uri,
             headers={
                 'user-agent': 'retsquery/{0}'.format(RETSQUERY_VERSION)
             }
         )
-        
+    
+    def login(self, uri, username, password):
         passwd_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
         passwd_mgr.add_password(None, uri, username, password)
         auth_handler = patchedurllib2.PatchedHTTPDigestAuthHandler(passwd_mgr)
@@ -172,7 +192,15 @@ class SessionImpl_1_7_2(object):
         
         opener = urllib2.build_opener(auth_handler, cookie_handler)
         urllib2.install_opener(opener)
-        return self.__read_login_data(urllib2.urlopen(request))
+        response = urllib2.urlopen(self.make_request(uri))
+        
+        url_parts = urlparse.urlparse(response.geturl())
+        #print(url_parts)
+        self.base_url = '{0}://{1}'.format(url_parts[0], url_parts[1])
+        print(self.base_url)
+        
+        self.__is_logged_in = self.__read_login_data(response)
+        return self.is_logged_in
         
     def __read_login_data(self, login_response):
         tree = etree.parse(login_response)
@@ -247,4 +275,13 @@ class SessionImpl_1_7_2(object):
             
         return True
 
+    def make_uri(self, path):
+        return urlparse.urljoin(self.base_url, path)
+        #print(uri)
+        return uri
+
+    def logout(self):
+        response = urllib2.urlopen(self.make_request(self.make_uri(self.logout_url)))
+        #print(response.read())
+        print('Logged out')
     

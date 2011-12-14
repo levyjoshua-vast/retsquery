@@ -3,6 +3,8 @@ import urllib2
 import unittest
 from StringIO import StringIO
 import cookielib
+import urllib2
+import urlparse
 
 import mox
 
@@ -50,6 +52,21 @@ class TestSessionImpl_1_7_2(mox.MoxTestBase):
         
         self.mox.ReplayAll()
         self.assertTrue(sut.login('some login uri', 'some username', 'some password'))
+        
+    def test_get_metadata(self):
+        sut = SessionImpl_1_7_2()
+        sut.scheme = 'http'
+        sut.netloc = 'www.example.com'
+        sut.get_metadata_url = '/GetMetadata.asmx/GetMetadata'
+        self.mox.StubOutWithMock(sut, 'make_request')
+        request = self.mox.CreateMock(urllib2.Request)
+        request.headers = 'some headers'
+        sut.make_request('http://www.example.com/GetMetadata.asmx/GetMetadata?Type=METADATA-SYSTEM&ID=%2A').AndReturn(request)
+        self.mox.StubOutWithMock(urllib2, 'urlopen')
+        urllib2.urlopen(request).AndReturn(StringIO('some result'))
+        self.mox.ReplayAll()
+        sut.get_metadata()
+        self.mox.VerifyAll()
 
 class TestSessionImpl_1_7_2__process_response_text(mox.MoxTestBase):
     
@@ -138,4 +155,3 @@ some response text
         result = sut._SessionImpl_1_7_2__read_login_data(login_response)
         self.assertIsNotNone(result)
         self.assertFalse(result)
-    

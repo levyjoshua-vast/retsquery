@@ -40,3 +40,10 @@ class TestSession(mox.MoxTestBase):
         self.mox.ReplayAll()
         sut.__exit__(None, None, None)
         
+    def test_get_metadata(self):
+        impl = self.mox.CreateMock(SessionImpl_1_7_2)
+        impl.get_metadata().AndReturn('some response')
+        sut = Session(impl)
+        self.mox.ReplayAll()
+        self.assertEqual(sut.get_metadata(), 'some response')
+        

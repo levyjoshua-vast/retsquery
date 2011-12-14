@@ -40,7 +40,13 @@ version number.\nValid versions: {1}""".format(version, ','.join(map.iterkeys())
         
     def logout(self):
         if self.__impl.is_logged_in:
-            self.__impl.logout()
+            return self.__impl.logout()
+    
+    def get_metadata(self):
+        return self.__impl.get_metadata()
+        
+    def search_properties(self, query, limit=None):
+        return self.__impl.search_properties(query, limit)
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.logout()
@@ -54,7 +60,9 @@ class SessionImpl_1_7_2(object):
         
         self.__is_logged_in = False
         self.__cookie_jar = cookielib.CookieJar()
-        self.__base_url = None
+        #self.__base_url = None
+        self.__scheme = None
+        self.__netloc = None
         
         self.__broker_code = None
         self.__broker_branch = None
@@ -85,12 +93,24 @@ class SessionImpl_1_7_2(object):
         return self.__is_logged_in
     
     @property
-    def base_url(self):
-        return self.__base_url
+    def scheme(self):
+        return self.__scheme
     
-    @base_url.setter
-    def base_url(self, value):
-        self.__base_url = value
+    @scheme.setter
+    def scheme(self, value):
+        self.__scheme = value
+    
+    @property
+    def netloc(self):
+        return self.__netloc
+    
+    @netloc.setter
+    def netloc(self, value):
+        self.__netloc = value
+    
+    @property
+    def base_url(self):
+        return '{0}://{1}'.format(self.__scheme, self.__netloc)
     
     @property
     def action_url(self):
@@ -123,6 +143,10 @@ class SessionImpl_1_7_2(object):
     @property
     def get_metadata_url(self):
         return self.__get_metadata
+    
+    @get_metadata_url.setter
+    def get_metadata_url(self, value):
+        self.__get_metadata = value
     
     @property
     def server_information_url(self):
@@ -196,7 +220,9 @@ class SessionImpl_1_7_2(object):
         
         url_parts = urlparse.urlparse(response.geturl())
         #print(url_parts)
-        self.base_url = '{0}://{1}'.format(url_parts[0], url_parts[1])
+        #self.base_url = '{0}://{1}'.format(url_parts[0], url_parts[1])
+        self.__scheme = url_parts[0]
+        self.__netloc = url_parts[1]
         #print(self.base_url)
         
         self.__is_logged_in = self.__read_login_data(response)
@@ -223,6 +249,7 @@ class SessionImpl_1_7_2(object):
     
     def __process_response_text(self, response_text):
         data = self.__response_text_to_dict(response_text)
+        #pprint(data)
         parts = data['Broker'].split(',')
         self.__broker_code = parts[0]
         self.__broker_branch = parts[1]
@@ -281,7 +308,47 @@ class SessionImpl_1_7_2(object):
         return uri
 
     def logout(self):
-        response = urllib2.urlopen(self.make_request(self.make_uri(self.logout_url)))
-        #print(response.read())
-        print('Logged out')
-    
+        return urllib2.urlopen(self.make_request(self.make_uri(self.logout_url)))
+        
+    def get_metadata(self):
+        #print('\ngetmetadata')
+        query_params = {
+            'Type': 'METADATA-SYSTEM',
+            'ID': '*'
+        }
+        uri = urlparse.urlunparse((
+            self.scheme,
+            self.netloc,
+            self.get_metadata_url,
+            '',
+            urllib.urlencode(query_params),
+            ''
+        ))
+        #print('URI: ' + uri)
+        request = self.make_request(uri)
+        #print('Request headers: ' + str(request.headers))
+        response = urllib2.urlopen(request)
+        #print('Response info: ' + str(response.info()))
+        return response
+                        
+    def search_properties(self, query, limit=None):
+        params = {
+            'SearchType': 'Property',
+            'Class': '9',
+            'Format': 'STANDARD-XML',
+            'Query': query,
+            'QueryType': 'DMQL2',
+            'Select': ''
+        }
+        
+        if not limit is None:
+            params['Limit'] = limit
+                
+        uri = urlparse.urlunparse((self.scheme, self.netloc, self.search_url, '', urllib.urlencode(params), ''))
+        #print('URI: ' + uri)
+        request = self.make_request(uri)
+        #print('Request headers: ' + str(request.headers))
+        response = urllib2.urlopen(request)
+        #print('Response info: ' + str(response.info()))
+        return response
+                

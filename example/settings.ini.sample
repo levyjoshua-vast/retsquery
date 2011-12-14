@@ -1,3 +1,11 @@
+[general]
+metadata_temp_file: /path/to/metadata.xml
+properties_temp_file: /path/to/properties.xml
+delete_temp_files: True
+
+[urls]
+login: change me!
+
 [authentication]
 username: change me!
 password: change me!

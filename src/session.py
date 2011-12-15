@@ -45,8 +45,11 @@ version number.\nValid versions: {1}""".format(version, ','.join(map.iterkeys())
     def get_metadata(self):
         return self.__impl.get_metadata()
         
-    def search_properties(self, query, limit=None):
-        return self.__impl.search_properties(query, limit)
+    def search_properties(self, query, fields=[], format='STANDARD-XML', limit=None):
+        return self.__impl.search_properties(query, fields, format, limit)
+        
+    def get_object(self, type, resource, id, accept_types, location=None):
+        return self.__impl.get_object(type, resource, id, accept_types, location)
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.logout()
@@ -200,12 +203,18 @@ class SessionImpl_1_7_2(object):
     def broker_branch(self):
         return self.__broker_branch
     
-    def make_request(self, uri):
+    def make_request(self, uri, accept_types=None):
+        
+        headers = {
+            'user-agent': 'retsquery/{0}'.format(RETSQUERY_VERSION)
+        }
+        
+        if not accept_types is None:
+            headers['Accept'] = ', '.join(accept_types)
+        
         return urllib2.Request(
             uri,
-            headers={
-                'user-agent': 'retsquery/{0}'.format(RETSQUERY_VERSION)
-            }
+            headers=headers
         )
     
     def login(self, uri, username, password):
@@ -331,24 +340,44 @@ class SessionImpl_1_7_2(object):
         #print('Response info: ' + str(response.info()))
         return response
                         
-    def search_properties(self, query, limit=None):
+    def search_properties(self, query, fields=[], format='STANDARD-XML', limit=None):
         params = {
             'SearchType': 'Property',
             'Class': '9',
-            'Format': 'STANDARD-XML',
+            'Format': format,
             'Query': query,
             'QueryType': 'DMQL2',
-            'Select': ''
+            'Select': ','.join(fields)
         }
         
         if not limit is None:
             params['Limit'] = limit
                 
         uri = urlparse.urlunparse((self.scheme, self.netloc, self.search_url, '', urllib.urlencode(params), ''))
-        #print('URI: ' + uri)
+        print('URI: ' + uri)
         request = self.make_request(uri)
+        print('Request headers: ' + str(request.headers))
+        response = urllib2.urlopen(request)
+        print('Response info: ' + str(response.info()))
+        return response
+    
+    def get_object(self, type, resource, id, accept_types, location=None):
+        params = {
+            'Type': type,
+            'Resource': resource,
+            'ID': id
+        }
+        
+        if not location is None:
+            params['Location'] = location
+            
+        #pprint(params)
+        
+        uri = urlparse.urlunparse((self.scheme, self.netloc, self.get_object_url, '', urllib.urlencode(params), ''))
+        #print('URI: ' + uri)
+        request = self.make_request(uri, accept_types)
         #print('Request headers: ' + str(request.headers))
         response = urllib2.urlopen(request)
         #print('Response info: ' + str(response.info()))
         return response
-                
+    

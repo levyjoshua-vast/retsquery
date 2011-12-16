@@ -3,7 +3,7 @@ import unittest
 import mox
 
 from src.session import Session, SessionImpl_1_7_2
-from src.exceptions import RETSQueryException
+from src.retsqueryexception import RETSQueryException
 
 class TestSession(mox.MoxTestBase):
     

@@ -9,8 +9,7 @@ import cookielib
 import urlparse
 from lxml import etree
 
-from exceptions import RETSQueryException
-import utilities
+from retsqueryexception import RETSQueryException
 import patchedurllib2
 
 RETSQUERY_VERSION = '0.0.1'

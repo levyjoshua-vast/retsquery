@@ -353,11 +353,11 @@ class SessionImpl_1_7_2(object):
             params['Limit'] = limit
                 
         uri = urlparse.urlunparse((self.scheme, self.netloc, self.search_url, '', urllib.urlencode(params), ''))
-        print('URI: ' + uri)
+        #print('URI: ' + uri)
         request = self.make_request(uri)
-        print('Request headers: ' + str(request.headers))
+        #print('Request headers: ' + str(request.headers))
         response = urllib2.urlopen(request)
-        print('Response info: ' + str(response.info()))
+        #print('Response info: ' + str(response.info()))
         return response
     
     def get_object(self, type, resource, id, accept_types, location=None):
